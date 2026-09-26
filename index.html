@@ -108,15 +108,6 @@ body{font-family:"Microsoft YaHei",sans-serif;background:#eef1f7;color:#333;over
 .footbar .navbtns button{background:#2f5aa8;color:#fff;border:1px solid #4569a8;border-radius:6px;padding:7px 26px;font-size:13px;cursor:pointer}
 .footbar .navbtns button:hover{background:#3a66b8}
 .footbar .stat{font-size:12px;color:#cdd8ec}
-/* 遮罩自评 */
-.mask{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:80}
-.mask.show{display:flex}
-.mpanel{background:#fff;border-radius:12px;padding:24px 28px;width:420px;box-shadow:0 10px 40px rgba(0,0,0,.25)}
-.mpanel h3{color:#1b2a44;font-size:16px;margin-bottom:8px}
-.mpanel p{font-size:13px;color:#5a6577;margin-bottom:16px;line-height:1.6}
-.mpanel .row{display:flex;gap:10px}
-.mpanel button{flex:1;padding:11px;border:none;border-radius:7px;cursor:pointer;font-weight:700;font-size:13px;color:#fff}
-.g-full{background:#2e7d4f}.g-half{background:#b8860b}.g-none{background:#b03030}
 /* 抽屉 */
 .drawer{position:fixed;top:58px;right:-440px;width:424px;bottom:46px;background:#fff;z-index:70;transition:right .25s;box-shadow:-8px 0 22px rgba(0,0,0,.22);display:flex;flex-direction:column}
 .drawer.show{right:0}
@@ -212,17 +203,6 @@ body{font-family:"Microsoft YaHei",sans-serif;background:#eef1f7;color:#333;over
       已批改的题目可随时重新作答、再次批改。
     </div>
     <div style="margin-top:14px"><button style="width:100%;padding:11px;background:#2b5bd8;color:#fff;border:none;border-radius:7px;font-weight:700;font-size:14px;cursor:pointer" id="tipOk">明白了，开始使用</button></div>
-  </div>
-</div>
-<div class="mask" id="mask">
-  <div class="mpanel">
-    <h3>对照批改结果，本题自评</h3>
-    <p id="mInfo"></p>
-    <div class="row">
-      <button class="g-full" data-g="full">✓ 写全<br><span style="font-size:11px;font-weight:400">采分点齐</span></button>
-      <button class="g-half" data-g="half">◐ 一半<br><span style="font-size:11px;font-weight:400">进复盘</span></button>
-      <button class="g-none" data-g="none">✗ 没答到<br><span style="font-size:11px;font-weight:400">进复盘</span></button>
-    </div>
   </div>
 </div>
 <div class="drawer" id="drawer">
@@ -432,6 +412,7 @@ function markDetailHtml(cno, txt, pts, qIdx){
   return h;
 }
 function markAnswer(){
+ try {
   const cno = CASES[cur].no;
   const t = CASE_TEXT[cno];
   const n = qCount();
@@ -459,6 +440,7 @@ function markAnswer(){
   }
   renderSide();
   openDrawer('批改结果 · ' + cno + (n ? ' 问' + (qIdx + 1) : '') + ' ' + CASES[cur].title, markDetailHtml(cno, txt, pts, qIdx));
+ } catch(e) { alert('批改出错: ' + e.message + ' (line:' + (e.stack||'').split('\\n')[1] + ')'); }
 }
 window.selfAssess = function(g, cno, qIdx){
   const n = qCount();
