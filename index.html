@@ -161,7 +161,8 @@ body{font-family:"Microsoft YaHei",sans-serif;background:#eef1f7;color:#333;over
     <div class="submenu" id="subMenu"></div>
   </div>
   <div class="sysname">国家统一法律职业资格考试 · 主观题模拟答题</div>
-  <button id="btnTimer" onclick="toggleTimer()" style="margin-right:10px;background:#fff;color:#c0392b;font-weight:700;border:2px solid #c0392b;border-radius:8px;padding:5px 14px;cursor:pointer;font-size:13px">▶ 开始计时</button>
+  <button id="btnTimer" onclick="toggleTimer()" style="margin-right:6px;background:#fff;color:#c0392b;font-weight:700;border:2px solid #c0392b;border-radius:8px;padding:5px 14px;cursor:pointer;font-size:13px">▶ 开始计时</button>
+  <button id="btnResetT" onclick="resetTimer()" style="margin-right:10px;background:#fff;color:#2b5bd8;font-weight:700;border:2px solid #2b5bd8;border-radius:8px;padding:5px 14px;cursor:pointer;font-size:13px">↻ 重新计时</button>
   <div class="clock" id="clock" title="点击开始/暂停本题计时">00:00</div>
 </div>
 <div class="main">
@@ -433,6 +434,7 @@ function renderMeta(){
   if (bt) bt.textContent = trun ? '⏸ 暂停计时' : (elapsed > 0 ? '▶ 继续计时' : '▶ 开始计时');
 }
 function toggleTimer(){ trun = !trun; renderMeta(); }
+function resetTimer(){ elapsed = 0; trun = true; alert('已重新计时，从 00:00 开始'); renderMeta(); }
 setInterval(() => {
   if (trun) {
     elapsed++;
