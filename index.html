@@ -161,7 +161,8 @@ body{font-family:"Microsoft YaHei",sans-serif;background:#eef1f7;color:#333;over
     <div class="submenu" id="subMenu"></div>
   </div>
   <div class="sysname">国家统一法律职业资格考试 · 主观题模拟答题</div>
-  <div class="clock" id="clock" title="点击开始/暂停本题计时">25:00</div>
+  <button id="btnTimer" onclick="toggleTimer()" style="margin-right:10px;background:#fff;color:#c0392b;font-weight:700;border:2px solid #c0392b;border-radius:8px;padding:5px 14px;cursor:pointer;font-size:13px">▶ 开始计时</button>
+  <div class="clock" id="clock" title="点击开始/暂停本题计时">00:00</div>
 </div>
 <div class="main">
   <div class="side">
@@ -273,6 +274,7 @@ const SUB_TIME = { '理论法': 30, '刑法': 40, '刑诉': 40, '商法': 40, '�
 let pomoRun = false, pomoLeft = 25 * 60, pomoCnt = 0;
 try { pomoCnt = (JSON.parse(localStorage.getItem('fakao_pomo_global')) || {}).count || 0; } catch (e) {}
 let fs = 15;
+function saveLast(){ try { localStorage.setItem(KEY + ':last', JSON.stringify({cur: cur, curQ: curQ})); } catch (e) {} }
 function loadStore(){
   try { recs = JSON.parse(localStorage.getItem(KEY)) || []; } catch (e) { recs = []; }
   try { draft = JSON.parse(localStorage.getItem(KEY + ':draft')) || {}; } catch (e) { draft = {}; }
@@ -298,12 +300,16 @@ function switchSub(s){
   const d = ALL[s];
   KEY = d.key; CASES = d.cases; CASE_TEXT = d.text;
   loadStore();
-  cur = 0; curQ = 0; elapsed = 0; tleft = (SUB_TIME[s] || 40) * 60; trun = true;
+  /* 刷新后接着旧记录：恢复上次的题目与小问 */
+  var last = {};
+  try { last = JSON.parse(localStorage.getItem(KEY + ':last')) || {}; } catch (e) {}
+  cur = Math.min(Math.max(0, last.cur || 0), CASES.length - 1);
+  curQ = 0; elapsed = 0; tleft = (SUB_TIME[s] || 40) * 60; trun = false;
   document.getElementById('ans').value = '';
   document.getElementById('markChk').checked = false;
   document.getElementById('grpTitle').innerHTML = SUB + ' · ' + (SUB === '刑诉' ? '专题讲义类' : '案例分析题类') + ' <span>∨</span>';
   renderSubSel();
-  goCase(0);
+  goCase(cur, last.curQ || 0);
   /* 法律法规弹窗若开着，同步切换科目对应大类 */
   try { if (document.getElementById('lawMask').classList.contains('show')) openLawPanel(); } catch (e) {}
 }
@@ -368,9 +374,10 @@ function goQ(i){
   if (!n) return;
   if (i < 0) i = 0;
   if (i >= n) i = n - 1;
-commitDraft();
+  commitDraft();
   curQ = i;
   document.getElementById('ans').value = '';
+  saveLast();
   renderQzone(); renderMeta();
 }
 function loadBody(i){
@@ -386,20 +393,23 @@ function loadBody(i){
   box.innerHTML = h;
 }
 function loadPdf(pg){}
-function goCase(i){
+function goCase(i, q){
   if (i < 0 || i >= CASES.length) return;
   commitDraft();
   cur = i;
-  curQ = 0;
+  const nq = qCount() || 1;
+  curQ = (q != null) ? Math.min(Math.max(0, q), nq - 1) : 0;
   const c = CASES[cur];
   const d = draft[cur] || {};
   loadBody(cur);
   renderQzone();
-  document.getElementById('ans').value = '';
+  /* 回填该题上次做到的小问草稿（刷新后接着旧记录做题） */
+  document.getElementById('ans').value = (d.perQ ? (d.perQ[curQ] || '') : (d.text || '')) || '';
   elapsed = d.elapsed || 0;
-  tleft = Math.max(0, 25 * 60 - elapsed);
+  tleft = Math.max(0, (SUB_TIME[SUB] || 40) * 60 - elapsed);
   document.getElementById('markChk').checked = !!(marks[c.no] && marks[c.no].mark);
   document.getElementById('curTitle').textContent = '答题区域 · 问题' + (qCount() ? (curQ + 1) : '');
+  saveLast();
   renderSide(); renderMeta();
 }
 function commitDraft(){
@@ -416,15 +426,19 @@ function renderMeta(){
   document.getElementById('cTime').textContent = '本题用时 ' + fmt(elapsed);
   const clk = document.getElementById('clock');
   const total = (SUB_TIME[SUB] || 40) * 60;
-  clk.textContent = trun ? fmt(Math.max(0, tleft)) : (elapsed ? '⏸ ' + fmt(elapsed) : fmt(total));
-  clk.className = 'clock' + (trun && tleft < 600 ? ' warn' : '');
+  clk.textContent = trun ? fmt(elapsed) : (elapsed ? '⏸ ' + fmt(elapsed) : '00:00');
+  clk.className = 'clock' + (trun && elapsed >= total - 600 ? ' warn' : '');
   document.getElementById('pomoPill').textContent = '🍅 ' + pomoCnt;
+  var bt = document.getElementById('btnTimer');
+  if (bt) bt.textContent = trun ? '⏸ 暂停计时' : (elapsed > 0 ? '▶ 继续计时' : '▶ 开始计时');
 }
+function toggleTimer(){ trun = !trun; renderMeta(); }
 setInterval(() => {
   if (trun) {
-    elapsed++; if (tleft > 0) tleft--;
-    if (tleft === 600) { alert('距考试结束还有 10 分钟！'); }
-    if (tleft === 0) { trun = false; alert('考试时间到！可点「提交批改」对照答案'); }
+    elapsed++;
+    const total = (SUB_TIME[SUB] || 40) * 60;
+    if (elapsed === total - 600) { alert('考试时间不足，请考生抓紧时间答题'); }
+    if (elapsed === total) { trun = false; alert('本题考试时间已截至'); }
     renderMeta();
   }
   if (pomoRun) {
