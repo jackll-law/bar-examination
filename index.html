@@ -655,6 +655,10 @@ function markDetailHtml(cno, txt, pts, qIdx){
   const pct = Math.round(nHit / hits.length * 100);
   const auto = pct >= 80 ? 'full' : pct >= 40 ? 'half' : 'none';
   let h = '<div class="stat" style="font-size:14px"><span>命中 <b style="color:#1a9b5c">' + nHit + '</b>/' + hits.length + ' 采分点</span><span>得分率 <b style="color:#1a9b5c">' + pct + '%</b></span></div>';
+  /* 2026-09-30 面板顶部显示用户作答原文（面板遮挡答题区时也能看到自己写的答案） */
+  h += '<div style="margin:10px 0;padding:12px 16px;background:#eef6ff;border-left:4px solid #2b5bd8;border-radius:6px">';
+  h += '<div style="font-size:12.5px;font-weight:700;color:#1f3a8a;margin-bottom:4px">📝 我的作答（' + txt.length + '字）</div>';
+  h += '<div style="white-space:pre-wrap;font-size:15px;line-height:1.9;color:#1b2a44">' + esc(txt) + '</div></div>';
   h += '<div style="font-size:12px;color:#7a8398;margin-bottom:8px">下方列出全部采分点，✗ 为你未答到的待补足之处（关键词已标注）。看完后拉到最下方自评。</div>';
   hits.forEach(h2 => {
     const p = h2.p;
@@ -734,6 +738,11 @@ function markAll(){
     h += '<div style="margin:10px 0;padding:11px;background:#f7f9ff;border:1px solid #e3e7f1;border-radius:8px">';
     h += '<div style="font-weight:700;color:#1f3a8a">问题' + (qi + 1) + (txt ? ' · 命中 ' + hit + '/' + pts.length + '（' + pct + '%）' : ' · 未作答') + '</div>';
     h += '<div style="font-size:12px;color:#5a6577;margin:4px 0">' + esc(t.q[qi]) + '</div>';
+    /* 2026-09-30 显示用户作答原文 */
+    if (txt) {
+      h += '<div style="margin-top:6px;font-size:12px;font-weight:700;color:#1f3a8a">我的作答：</div>';
+      h += '<div style="white-space:pre-wrap;font-size:14.5px;line-height:1.8;margin-top:2px;color:#1b2a44;background:#eef6ff;border-left:3px solid #2b5bd8;border-radius:5px;padding:8px 12px">' + esc(txt) + '</div>';
+    }
     const a = (t.ans && t.ans[qi]) ? t.ans[qi] : (t.ans && t.ans[0] ? t.ans[0] : '');
     h += '<div style="margin-top:6px;font-size:12px;font-weight:700;color:#1a9b5c">参考答案：</div>';
     h += '<div style="white-space:pre-wrap;font-size:12.5px;line-height:1.7;margin-top:2px;color:#2b3a55">' + esc(a) + '</div>';
@@ -816,6 +825,17 @@ window.showAnswer = function(cno){
   let label = '参考答案全文（对照采分点自查）';
   if (n && t.ans.length > 1) { ansList = [t.ans[curQ] || t.ans[0]]; label = '问题' + (curQ + 1) + ' 参考答案'; }
   let h = '<div class="stat" style="font-size:12.5px">' + label + '</div>';
+  /* 2026-09-30 顶部显示用户作答原文，方便与参考答案对照 */
+  var myAns = '';
+  try {
+    var d = draft[cur] || {};
+    myAns = ((d.perQ ? d.perQ[curQ] : d.text) || document.getElementById('ans').value || '').trim();
+  } catch (e) {}
+  if (myAns) {
+    h += '<div style="margin:10px 0;padding:12px 16px;background:#eef6ff;border-left:4px solid #2b5bd8;border-radius:6px">';
+    h += '<div style="font-size:12.5px;font-weight:700;color:#1f3a8a;margin-bottom:4px">📝 我的作答</div>';
+    h += '<div style="white-space:pre-wrap;font-size:15px;line-height:1.9;color:#1b2a44">' + esc(myAns) + '</div></div>';
+  }
   /* 主版本答案（标注来源） */
   var mainLabel = t.ans_label || '主版本';
   h += '<div style="margin-bottom:14px"><div style="font-size:12px;color:#2b5bd8;font-weight:700;margin-bottom:6px;background:#eef4fb;padding:4px 8px;border-radius:4px">【' + esc(mainLabel) + '版】</div>';
