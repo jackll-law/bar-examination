@@ -44,7 +44,7 @@ body{font-family:"Microsoft YaHei",sans-serif;background:#eef1f7;color:#333;over
   .ans{flex:none;height:auto;min-height:260px}
   .ans textarea{min-height:180px}
   .footbar{position:fixed;left:0;right:0;bottom:0;z-index:59}
-  .drawer{top:58px;bottom:46px;width:92%;right:-100%}
+  .drawer{height:70vh;max-height:none;min-height:200px}
   .mask .mpanel{width:92%}
 }
 /* 主体 */
@@ -139,12 +139,18 @@ body{font-family:"Microsoft YaHei",sans-serif;background:#eef1f7;color:#333;over
 #lawMask{background:transparent;pointer-events:none}
 #lawWin{pointer-events:auto;left:90px;top:70px;width:960px;max-width:97vw;height:48vh;max-height:calc(100vh - 120px)}
 @media (max-width:860px){#lawWin{left:2vw;top:64px;width:96vw;height:52vh}}
-/* 抽屉 */
-.drawer{position:fixed;top:58px;right:-440px;width:424px;bottom:46px;background:#fff;z-index:70;transition:right .25s;box-shadow:-8px 0 22px rgba(0,0,0,.22);display:flex;flex-direction:column}
-.drawer.show{right:0}
-.drawer .dh{background:#1b2a44;color:#fff;padding:12px 16px;display:flex;align-items:center;justify-content:space-between}
-.drawer .dh button{background:none;border:none;color:#cbd6ea;font-size:16px;cursor:pointer}
-.drawer .db{flex:1;overflow-y:auto;padding:14px 16px;font-size:13px}
+/* 抽屉（2026-09-30 改为底部面板：满宽、大字体、可拖动高度） */
+.drawer{position:fixed;left:0;right:0;bottom:-100%;height:60vh;max-height:600px;min-height:300px;background:#fff;z-index:70;transition:bottom .3s;box-shadow:0 -4px 22px rgba(0,0,0,.18);display:flex;flex-direction:column;border-top:3px solid #2b5bd8;border-radius:14px 14px 0 0}
+.drawer.show{bottom:46px}
+.drawer .dh{background:#1b2a44;color:#fff;padding:10px 18px;display:flex;align-items:center;justify-content:space-between;border-radius:11px 11px 0 0;cursor:ns-resize;user-select:none}
+.drawer .dh button{background:none;border:none;color:#cbd6ea;font-size:18px;cursor:pointer}
+.drawer .db{flex:1;overflow-y:auto;padding:18px 24px;font-size:15px;line-height:1.8}
+.drawer .db .stat{font-size:14px}
+.drawer .db .m-hit{font-size:14.5px;padding:10px 14px}
+.drawer .db .m-miss{font-size:14.5px;padding:10px 14px}
+.drawer .db .ct-q{font-size:15px;line-height:2}
+.drawer .db button{font-size:14px;padding:8px 16px}
+.drawer .db textarea{font-size:14px}
 .stat{font-size:12.5px;color:#5a6577;display:flex;gap:12px;flex-wrap:wrap;margin-bottom:10px}
 .dcard{background:#f7f9ff;border:1px solid #e3e7f1;border-radius:8px;padding:9px 12px;margin:6px 0;font-size:13px}
 .dcard .hint{color:#8b96a9;font-size:12px;margin-top:4px;display:flex;justify-content:space-between;align-items:center}
@@ -274,8 +280,8 @@ body{font-family:"Microsoft YaHei",sans-serif;background:#eef1f7;color:#333;over
   <div class="db" id="dBody"></div>
 </div>
 <script>
-/* 版本标记 v2.3 (2026-09-30) - 如看不到此版本号说明浏览器缓存了旧版 */
-console.log('机考系统 v2.3 加载中...');
+/* 版本标记 v2.4 (2026-09-30) - 如看不到此版本号说明浏览器缓存了旧版 */
+console.log('机考系统 v2.4 加载中...');
 /* ===== 全局错误捕获：任何JS错误都显示在页面上，不再静默失败 ===== */
 window.addEventListener('error', function(e){
   var d = document.createElement('div');
@@ -496,6 +502,23 @@ function splitCase(txt){
 }
 function closeDrawer(){ document.getElementById('drawer').classList.remove('show'); }
 function openDrawer(title, html){ document.getElementById('dTitle').textContent = title; document.getElementById('dBody').innerHTML = html; document.getElementById('drawer').classList.add('show'); }
+/* 底部面板拖动调整高度（2026-09-30） */
+(function(){
+  var dh = document.querySelector('.drawer .dh');
+  if (!dh) return;
+  var dragging = false, sy = 0, sh = 0;
+  dh.addEventListener('mousedown', function(e){
+    if (e.target.tagName === 'BUTTON') return;
+    dragging = true; sy = e.clientY; sh = document.getElementById('drawer').offsetHeight;
+    document.body.style.cursor = 'ns-resize';
+  });
+  document.addEventListener('mousemove', function(e){
+    if (!dragging) return;
+    var h = Math.max(200, Math.min(sh + (sy - e.clientY), window.innerHeight - 100));
+    document.getElementById('drawer').style.height = h + 'px';
+  });
+  document.addEventListener('mouseup', function(){ if (dragging){ dragging = false; document.body.style.cursor = ''; } });
+})();
 function fontSize(d){ fs = Math.min(19, Math.max(12, fs + d)); document.getElementById('ans').style.fontSize = fs + 'px'; document.querySelectorAll('#caseText .ct-body').forEach(e => e.style.fontSize = (fs - 1) + 'px'); }
 /* ---------- 渲染 ---------- */
 function renderSide(){
