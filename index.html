@@ -135,6 +135,10 @@ body{font-family:"Microsoft YaHei",sans-serif;background:#eef1f7;color:#333;over
 .law-node.lv3{padding-left:42px;font-size:12px}
 .law-node.leaf{color:#5a6577}
 .law-node.leaf.cur{color:#fff}
+/* 法条窗口非模态（2026-09-30 边查法条边答题）：遮罩透明可穿透点击，仅窗口本体拦截；默认高度只占案情区不盖答题区 */
+#lawMask{background:transparent;pointer-events:none}
+#lawWin{pointer-events:auto;left:90px;top:70px;width:960px;max-width:97vw;height:48vh;max-height:calc(100vh - 120px)}
+@media (max-width:860px){#lawWin{left:2vw;top:64px;width:96vw;height:52vh}}
 /* 抽屉 */
 .drawer{position:fixed;top:58px;right:-440px;width:424px;bottom:46px;background:#fff;z-index:70;transition:right .25s;box-shadow:-8px 0 22px rgba(0,0,0,.22);display:flex;flex-direction:column}
 .drawer.show{right:0}
@@ -247,7 +251,7 @@ body{font-family:"Microsoft YaHei",sans-serif;background:#eef1f7;color:#333;over
   </div>
 </div>
 <div class="mask" id="lawMask">
-  <div class="mpanel" id="lawWin" style="position:fixed;left:90px;top:70px;width:980px;max-width:97vw;height:86vh;max-height:96vh;display:flex;flex-direction:column;padding:0">
+  <div class="mpanel" id="lawWin" style="position:fixed;display:flex;flex-direction:column;padding:0">
     <div id="lawTitle" style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid #2b5bd8;background:#1b2a44;color:#fff;cursor:move;user-select:none">
       <b style="font-size:15px">法律法规汇编</b>
       <span style="flex:1"></span>
@@ -256,7 +260,7 @@ body{font-family:"Microsoft YaHei",sans-serif;background:#eef1f7;color:#333;over
     <div style="display:flex;flex:1;min-height:0">
       <div style="width:250px;border-right:1px solid #e3e7f1;background:#f7f9ff;display:flex;flex-direction:column;min-width:0">
         <div style="padding:8px;border-bottom:1px solid #e3e7f1">
-          <input id="lawSearch" placeholder="搜索法条关键词…" style="width:100%;box-sizing:border-box;border:1px solid #c7d2e6;border-radius:6px;padding:7px 10px;font-size:12.5px" oninput="lawKw=this.value;curChap='';renderLawTree();renderChap();renderLawBody()">
+          <input id="lawSearch" placeholder="搜索法条关键词…" style="width:100%;box-sizing:border-box;border:1px solid #c7d2e6;border-radius:6px;padding:7px 10px;font-size:12.5px" oninput="lawKw=this.value;curChap='';renderLawTree();renderLawBody()">
         </div>
         <div id="lawTree" style="flex:1;overflow:auto;padding:8px"></div>
       </div>
@@ -270,8 +274,8 @@ body{font-family:"Microsoft YaHei",sans-serif;background:#eef1f7;color:#333;over
   <div class="db" id="dBody"></div>
 </div>
 <script>
-/* 版本标记 v2.1 (2026-09-27) - 如看不到此版本号说明浏览器缓存了旧版 */
-console.log('机考系统 v2.1 加载中...');
+/* 版本标记 v2.3 (2026-09-30) - 如看不到此版本号说明浏览器缓存了旧版 */
+console.log('机考系统 v2.3 加载中...');
 /* ===== 全局错误捕获：任何JS错误都显示在页面上，不再静默失败 ===== */
 window.addEventListener('error', function(e){
   var d = document.createElement('div');
@@ -1025,25 +1029,40 @@ function openLawPanel(){
     LW.bOrder.forEach(function(b){ if(!hit && (!lawBig || b === lawBig) && LW.bigs[b].length) hit = LW.bigs[b][0]; });
     curLaw = hit || curLaw;
   }
+  /* 恢复上次拖动/缩放后的窗口位置（2026-09-30） */
+  try {
+    var p = JSON.parse(localStorage.getItem('fk:lawpos') || 'null');
+    var w = document.getElementById('lawWin');
+    if (p && p.l != null){
+      w.style.left = Math.max(0, Math.min(p.l, innerWidth - 120)) + 'px';
+      w.style.top = Math.max(0, Math.min(p.t, innerHeight - 80)) + 'px';
+      if (p.w) w.style.width = Math.max(360, Math.min(p.w, innerWidth)) + 'px';
+      if (p.h) w.style.height = Math.max(240, Math.min(p.h, innerHeight)) + 'px';
+    }
+  } catch(e){}
   document.getElementById('lawMask').classList.add('show');
   renderLawTree();
   document.getElementById('lawBody').innerHTML = '<div style="color:#8b96a9;padding:44px;text-align:center">请先在左侧展开章节，点击具体「章」查看法条</div>';
 }
-/* 法条窗口：拖动 + 缩放 */
+/* 法条窗口：拖动 + 缩放（位置尺寸持久化，下次打开恢复） */
+function saveLawPos(){
+  var w = document.getElementById('lawWin');
+  try { localStorage.setItem('fk:lawpos', JSON.stringify({ l: w.offsetLeft, t: w.offsetTop, w: w.offsetWidth, h: w.offsetHeight })); } catch(e){}
+}
 (function(){
   var w = document.getElementById('lawWin'), t = document.getElementById('lawTitle'), r = document.getElementById('lawResize');
   t.addEventListener('mousedown', function(e){
     e.preventDefault();
     var sx = e.clientX, sy = e.clientY, ox = w.offsetLeft, oy = w.offsetTop;
     function mv(e){ w.style.left = Math.max(0, ox + e.clientX - sx) + 'px'; w.style.top = Math.max(0, oy + e.clientY - sy) + 'px'; }
-    function up(){ document.removeEventListener('mousemove', mv); document.removeEventListener('mouseup', up); }
+    function up(){ document.removeEventListener('mousemove', mv); document.removeEventListener('mouseup', up); saveLawPos(); }
     document.addEventListener('mousemove', mv); document.addEventListener('mouseup', up);
   });
   r.addEventListener('mousedown', function(e){
     e.preventDefault();
     var sx = e.clientX, sy = e.clientY, ow = w.offsetWidth, oh = w.offsetHeight;
     function mv(e){ w.style.width = Math.max(560, ow + e.clientX - sx) + 'px'; w.style.height = Math.max(360, oh + e.clientY - sy) + 'px'; }
-    function up(){ document.removeEventListener('mousemove', mv); document.removeEventListener('mouseup', up); }
+    function up(){ document.removeEventListener('mousemove', mv); document.removeEventListener('mouseup', up); saveLawPos(); }
     document.addEventListener('mousemove', mv); document.addEventListener('mouseup', up);
   });
 })();
